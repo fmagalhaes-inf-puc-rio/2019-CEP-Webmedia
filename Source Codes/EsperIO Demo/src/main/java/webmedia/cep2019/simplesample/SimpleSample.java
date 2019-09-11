@@ -3,6 +3,8 @@ package webmedia.cep2019.simplesample;
 import com.espertech.esper.common.client.EPCompiled;
 import com.espertech.esper.common.client.EventBean;
 import com.espertech.esper.common.client.configuration.Configuration;
+import com.espertech.esper.common.client.dataflow.core.EPDataFlowInstance;
+import com.espertech.esper.common.client.dataflow.core.EPDataFlowInstantiationOptions;
 import com.espertech.esper.compiler.client.CompilerArguments;
 import com.espertech.esper.compiler.client.EPCompileException;
 import com.espertech.esper.compiler.client.EPCompiler;
@@ -79,8 +81,9 @@ public class SimpleSample {
      * Compile and deploy an EPL rule
      * @param label a label for the rule
      * @param epl the EPL rule
+     * @return a String with the deployementId of the rule
      */
-    private void compileAndDeploy(String label, String epl){
+    private String compileAndDeploy(String label, String epl){
         EPCompiled compiledRule = null;
         try{ //Compile the rule to java bytecode
             compiledRule = epCompiler.compile("@name('" + label + "') " + epl, compilerArguments);
@@ -101,6 +104,7 @@ public class SimpleSample {
 
         //Add the printListener to the created statement
         statement.addListener(printListener);
+        return (deployment != null) ?deployment.getDeploymentId() :null;
     }
 
     public void generateInput(String directory){
@@ -125,31 +129,58 @@ public class SimpleSample {
         }
     }
 
-    /**
-     * Run this demo
-     */
-    public void runDemo(){
-        this.init();
-        this.compileAndDeploy("select-all", "select * from SensorUpdate");
+    public void readCSVInput(){
         try {
+            //Check if there is an input file, creates one if there is not
             String directory = System.getProperty("user.dir");
-            File input_file = new File(directory, "input.txt");
-            if (!input_file.exists()) {
+            File inputFile = new File(directory, "input.txt");
+            if (!inputFile.exists()) {
                 File toCopy = new File(Paths.get(directory).getParent().toString(), "input.txt");
                 if (toCopy.exists()) {
-                    input_file.createNewFile();
-                    Files.copy(toCopy.toPath(), input_file.toPath());
+                    //input_file.createNewFile();
+                    Files.copy(toCopy.toPath(), inputFile.toPath());
                 }
                 else{
                     generateInput(directory);
                 }
             }
 
+            //Create the input DataFlow
+            String inputLocation = inputFile.getAbsolutePath();
+            //The dataflow is created in a EPL statement
+            String createFSEpl =
+                    "create dataflow SensorCSVFlow\n" +
+                            //FileSource is the type of datasource we are creating
+                            //we are generating a stream of SensorUpdate events
+                        "FileSource -> sensorstream<SensorUpdate> {\n" +
+                            //file attribute specifies the file path
+                            "file: '"+inputLocation+"', \n" +
+                            //propertyNames is the order in wich each event property appears in each csv line
+                            "propertyNames: ['temperature','humidity','roomId'], \n" +
+                            //repeat the events once after reaching the end of the file
+                            "numLoops: 1\n" +
+                        "}\n" +
+                    //Tells the Runtime to consume the generated stream as input
+                    "EventBusSink(sensorstream){}";
+            String deploymentId = compileAndDeploy("SensorCSVFlow", createFSEpl);
+            EPDataFlowInstance instance = runtime.getDataFlowService().instantiate(deploymentId, "SensorCSVFlow");
+            instance.run();
+
         }catch (Exception iex){
             iex.printStackTrace();
         }
+    }
+
+    /**
+     * Run this demo
+     */
+    public void runDemo(){
+        this.init();
+        this.compileAndDeploy("select-all", "select * from SensorUpdate");
+
         System.out.println("Working Directory = " + System.getProperty("user.dir"));
         //Send a new event
+        readCSVInput();
         runtime.getEventService().sendEventBean(new SensorUpdate(25.6, 0.65, 1), "SensorUpdate");
     }
 
