@@ -12,6 +12,17 @@ import com.espertech.esper.runtime.client.*;
 import org.apache.log4j.varia.NullAppender;
 import webmedia.cep2019.simplesample.event.*;
 
+import javax.imageio.IIOException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.rmi.server.ExportException;
+import java.util.Random;
+
 public class SimpleSample {
 
     Configuration configuration;
@@ -92,12 +103,52 @@ public class SimpleSample {
         statement.addListener(printListener);
     }
 
+    public void generateInput(String directory){
+        File file = new File(directory, "input.txt");
+        try {
+            file.createNewFile();
+            FileOutputStream fos = new FileOutputStream(file);
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+            Random random = new Random();
+            for (int i = 0; i < 15; i++) {
+                double temp = random.nextInt(100) + random.nextDouble();
+                double hum = random.nextDouble();
+                int room = i % 3;
+                String csvLine = "" + temp + "," + hum + "," + room;
+                bw.write(csvLine);
+                bw.newLine();
+            }
+            bw.close();
+            fos.close();
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
     /**
      * Run this demo
      */
     public void runDemo(){
         this.init();
         this.compileAndDeploy("select-all", "select * from SensorUpdate");
+        try {
+            String directory = System.getProperty("user.dir");
+            File input_file = new File(directory, "input.txt");
+            if (!input_file.exists()) {
+                File toCopy = new File(Paths.get(directory).getParent().toString(), "input.txt");
+                if (toCopy.exists()) {
+                    input_file.createNewFile();
+                    Files.copy(toCopy.toPath(), input_file.toPath());
+                }
+                else{
+                    generateInput(directory);
+                }
+            }
+
+        }catch (Exception iex){
+            iex.printStackTrace();
+        }
+        System.out.println("Working Directory = " + System.getProperty("user.dir"));
         //Send a new event
         runtime.getEventService().sendEventBean(new SensorUpdate(25.6, 0.65, 1), "SensorUpdate");
     }
@@ -106,4 +157,6 @@ public class SimpleSample {
         SimpleSample simpleSample = new SimpleSample();
         simpleSample.runDemo();
     }
+
+
 }
