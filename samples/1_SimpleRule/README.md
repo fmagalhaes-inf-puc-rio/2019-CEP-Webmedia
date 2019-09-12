@@ -9,4 +9,4 @@ To build the project use:<br>
 
 The executable jar file will be available at:<br>
 
-> <code>java -jar target/target/SimpleSample-1.0-SNAPSHOT-jar-with-dependencies.jar</code><br>
+> <code>java -jar target/SimpleSample-1.0-SNAPSHOT-jar-with-dependencies.jar</code><br>
