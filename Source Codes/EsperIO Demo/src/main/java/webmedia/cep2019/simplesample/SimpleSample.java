@@ -9,8 +9,10 @@ import com.espertech.esper.compiler.client.CompilerArguments;
 import com.espertech.esper.compiler.client.EPCompileException;
 import com.espertech.esper.compiler.client.EPCompiler;
 import com.espertech.esper.compiler.client.EPCompilerProvider;
+import com.espertech.esperio.file.FileSinkForge;
 
 import com.espertech.esper.runtime.client.*;
+import com.espertech.esperio.file.FileSourceForge;
 import org.apache.log4j.varia.NullAppender;
 import webmedia.cep2019.simplesample.event.*;
 
@@ -24,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.server.ExportException;
 import java.util.Random;
-
 public class SimpleSample {
 
     Configuration configuration;
@@ -49,6 +50,8 @@ public class SimpleSample {
 
         //Add a new event type using a java class
         configuration.getCommon().addEventType(SensorUpdate.class);
+
+        configuration.getCommon().addImport("com.espertech.esperio.file.*");
 
         //Get the runtime environment
         runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
@@ -81,9 +84,10 @@ public class SimpleSample {
      * Compile and deploy an EPL rule
      * @param label a label for the rule
      * @param epl the EPL rule
+     * @param addPrintListener if a PrintListener should be added to the generated EPLStatement
      * @return a String with the deployementId of the rule
      */
-    private String compileAndDeploy(String label, String epl){
+    private String compileAndDeploy(String label, String epl, boolean addPrintListener){
         EPCompiled compiledRule = null;
         try{ //Compile the rule to java bytecode
             compiledRule = epCompiler.compile("@name('" + label + "') " + epl, compilerArguments);
@@ -103,7 +107,10 @@ public class SimpleSample {
 
 
         //Add the printListener to the created statement
-        statement.addListener(printListener);
+        if(addPrintListener & (statement != null))
+            statement.addListener(printListener);
+
+
         return (deployment != null) ?deployment.getDeploymentId() :null;
     }
 
@@ -115,7 +122,7 @@ public class SimpleSample {
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
             Random random = new Random();
             for (int i = 0; i < 15; i++) {
-                double temp = random.nextInt(100) + random.nextDouble();
+                double temp = random.nextInt(50) + random.nextDouble();
                 double hum = random.nextDouble();
                 int room = i % 3;
                 String csvLine = "" + temp + "," + hum + "," + room;
@@ -144,7 +151,6 @@ public class SimpleSample {
                     generateInput(directory);
                 }
             }
-
             //Create the input DataFlow
             String inputLocation = inputFile.getAbsolutePath();
             //The dataflow is created in a EPL statement
@@ -154,7 +160,7 @@ public class SimpleSample {
                             //we are generating a stream of SensorUpdate events
                         "FileSource -> sensorstream<SensorUpdate> {\n" +
                             //file attribute specifies the file path
-                            "file: '"+inputLocation+"', \n" +
+                            "file: 'input.txt', \n" +
                             //propertyNames is the order in wich each event property appears in each csv line
                             "propertyNames: ['temperature','humidity','roomId'], \n" +
                             //repeat the events once after reaching the end of the file
@@ -162,7 +168,7 @@ public class SimpleSample {
                         "}\n" +
                     //Tells the Runtime to consume the generated stream as input
                     "EventBusSink(sensorstream){}";
-            String deploymentId = compileAndDeploy("SensorCSVFlow", createFSEpl);
+            String deploymentId = compileAndDeploy("SensorCSVFlow", createFSEpl, false);
             EPDataFlowInstance instance = runtime.getDataFlowService().instantiate(deploymentId, "SensorCSVFlow");
             instance.run();
 
@@ -171,14 +177,30 @@ public class SimpleSample {
         }
     }
 
+    public void generateRules(){
+        //Creates new Event Streams for low humidity and High temperature
+        compileAndDeploy("createLowHumidity", "create schema LowHumidity () copyfrom SensorUpdate", false);
+        compileAndDeploy("createHighTemperature", "create schema HighTemperature () copyfrom SensorUpdate", false);
+
+        compileAndDeploy("insert-LowHumidity", "insert into LowHumidity \n" +
+                                                        "select * from SensorUpdate(humidity<0.35)", true);
+
+        compileAndDeploy("insert-LowHumidity", "insert into HighTemperature \n" +
+                                                        "select * from SensorUpdate(temperature>35)", true);
+
+        //Creates rules that print each new event
+        compileAndDeploy("select-SensorUpdate", "select * from SensorUpdate", true);
+        compileAndDeploy("select-LowHumidity", "select * from LowHumidity", true);
+        compileAndDeploy("select-HighTemperature", "select * from HighTemperature", true);
+    }
+
     /**
      * Run this demo
      */
     public void runDemo(){
-        this.init();
-        this.compileAndDeploy("select-all", "select * from SensorUpdate");
+        init();
 
-        System.out.println("Working Directory = " + System.getProperty("user.dir"));
+        generateRules();
         //Send a new event
         readCSVInput();
         runtime.getEventService().sendEventBean(new SensorUpdate(25.6, 0.65, 1), "SensorUpdate");

@@ -84,7 +84,6 @@
             <groupId>com.espertech</groupId>
             <artifactId>esperio-csv</artifactId>
             <version>8.2.0</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -92,13 +91,6 @@
             <artifactId>esperio-parent</artifactId>
             <version>8.2.0</version>
             <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>com.espertech</groupId>
-            <artifactId>esperio-csv</artifactId>
-            <version>8.2.0</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>
