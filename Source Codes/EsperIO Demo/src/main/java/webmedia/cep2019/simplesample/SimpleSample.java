@@ -14,6 +14,7 @@ import com.espertech.esperio.file.FileSinkForge;
 import com.espertech.esper.runtime.client.*;
 import com.espertech.esperio.file.FileSourceForge;
 import org.apache.log4j.varia.NullAppender;
+import org.reflections.Reflections;
 import webmedia.cep2019.simplesample.event.*;
 
 import javax.imageio.IIOException;
@@ -26,6 +27,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.server.ExportException;
 import java.util.Random;
+import java.util.Set;
+
 public class SimpleSample {
 
     Configuration configuration;
@@ -48,8 +51,13 @@ public class SimpleSample {
         //The configuration is used to configure the Esper engine before the processing starts
         configuration = new Configuration();
 
-        //Add a new event type using a java class
+        //Add a new event type to each event on the event package
+        Reflections reflections = new Reflections("webmedia.cep2019.simplesample.event");
         configuration.getCommon().addEventType(SensorUpdate.class);
+        for(Class eventClass : reflections.getSubTypesOf(SensorUpdate.class)){
+            configuration.getCommon().addEventType(eventClass);
+        }
+
 
         configuration.getCommon().addImport("com.espertech.esperio.file.*");
 
@@ -178,20 +186,18 @@ public class SimpleSample {
     }
 
     public void generateRules(){
-        //Creates new Event Streams for low humidity and High temperature
-        compileAndDeploy("createLowHumidity", "create schema LowHumidity () copyfrom SensorUpdate", false);
-        compileAndDeploy("createHighTemperature", "create schema HighTemperature () copyfrom SensorUpdate", false);
 
-        compileAndDeploy("insert-LowHumidity", "insert into LowHumidity \n" +
-                                                        "select * from SensorUpdate(humidity<0.35)", true);
+        //compileAndDeploy("insert-LowHumidity", "insert into LowHumidity \n" +
+                                                        "select temperature, humidity, roomId from SensorUpdate(humidity<0.35)", true);
 
-        compileAndDeploy("insert-LowHumidity", "insert into HighTemperature \n" +
-                                                        "select * from SensorUpdate(temperature>35)", true);
+        //compileAndDeploy("insert-LowHumidity", "insert into HighTemperature \n" +
+                                                        "select temperature, humidity, roomId from SensorUpdate(temperature>35)", true);
 
         //Creates rules that print each new event
         compileAndDeploy("select-SensorUpdate", "select * from SensorUpdate", true);
         compileAndDeploy("select-LowHumidity", "select * from LowHumidity", true);
         compileAndDeploy("select-HighTemperature", "select * from HighTemperature", true);
+        System.out.println("here");
     }
 
     /**
@@ -203,6 +209,7 @@ public class SimpleSample {
         generateRules();
         //Send a new event
         readCSVInput();
+        System.out.println("here2");
         runtime.getEventService().sendEventBean(new SensorUpdate(25.6, 0.65, 1), "SensorUpdate");
     }
 
