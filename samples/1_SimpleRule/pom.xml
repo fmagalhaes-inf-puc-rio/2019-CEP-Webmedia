@@ -18,7 +18,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>webmedia.cep2019.simplesample.SimpleSample</mainClass>
+                            <mainClass>webmedia.cep2019.simplesample.Main</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

@@ -12,7 +12,7 @@ import com.espertech.esper.runtime.client.*;
 import org.apache.log4j.varia.NullAppender;
 import webmedia.cep2019.simplesample.event.*;
 
-public class SimpleSample {
+public class Main {
 
     Configuration configuration;
     EPCompiler epCompiler;
@@ -103,7 +103,7 @@ public class SimpleSample {
     }
 
     public static void main(String[] args) {
-        SimpleSample simpleSample = new SimpleSample();
-        simpleSample.runDemo();
+        Main Main = new Main();
+        Main.runDemo();
     }
 }
