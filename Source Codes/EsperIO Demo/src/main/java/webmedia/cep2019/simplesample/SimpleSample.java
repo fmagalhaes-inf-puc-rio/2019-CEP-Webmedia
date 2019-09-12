@@ -134,14 +134,14 @@ public class SimpleSample {
      * @param directory the directory to create the file
      */
     private void generateInput(String directory){
-        File file = new File(directory, "input.txt");
+        File file = new File(directory, "input.csv");
         System.out.println("No input file was found, generating a new one.\nJust a few seconds...");
         try {
             file.createNewFile();
             FileOutputStream fos = new FileOutputStream(file);
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
             Random random = new Random();
-            for (int i = 0; i < 15; i++) {
+            for (int i = 0; i < 30; i++) {
                 double temp = random.nextInt(50) + random.nextDouble();
                 double hum = random.nextDouble();
                 int room = i % 3;
@@ -168,9 +168,9 @@ public class SimpleSample {
     private void readCSVInput(){
         try {
             //Check if there is an input file, creates one if there is not
-            File inputFile = new File(currentDir, "input.txt");
+            File inputFile = new File(currentDir, "input.csv");
             if (!inputFile.exists()) {
-                File toCopy = new File(Paths.get(currentDir).getParent().toString(), "input.txt");
+                File toCopy = new File(Paths.get(currentDir).getParent().toString(), "input.csv");
                 if (toCopy.exists()) {
                     //input_file.createNewFile();
                     Files.copy(toCopy.toPath(), inputFile.toPath());
@@ -186,7 +186,7 @@ public class SimpleSample {
                             //we are generating a stream of SensorUpdate events
                         "FileSource -> sensorstream<SensorUpdate> {\n" +
                             //file attribute specifies the file path
-                            "file: 'input.txt', \n" +
+                            "file: 'input.csv', \n" +
                             //propertyNames is the order in wich each event property appears in each csv line
                             "propertyNames: ['temperature','humidity','roomId', 'timestamp'], \n" +
                             //repeat the events once after reaching the end of the file
@@ -260,8 +260,8 @@ public class SimpleSample {
      * Log special events to csv files
      */
     private void logSpecialEvents(){
-        outputEventsToFile("LowHumidity", "LowHumidityLog.txt");
-        outputEventsToFile("HighTemperature", "HighTemperatureLog.txt");
+        outputEventsToFile("LowHumidity", "LowHumidityLog.csv");
+        outputEventsToFile("HighTemperature", "HighTemperatureLog.csv");
     }
 
     /**
