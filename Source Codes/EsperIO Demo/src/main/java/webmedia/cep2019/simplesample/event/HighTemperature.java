@@ -5,8 +5,8 @@ public class HighTemperature extends SensorUpdate {
         super();
     }
 
-    public HighTemperature(double temperature, double humidity, int roomId) {
-        super(temperature, humidity, roomId);
+    public HighTemperature(double temperature, double humidity, int roomId, long timestamp) {
+        super(temperature, humidity, roomId, timestamp);
     }
 
     public double getTemperatureDeviation(){

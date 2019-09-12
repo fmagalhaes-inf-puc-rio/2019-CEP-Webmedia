@@ -4,14 +4,16 @@ public class SensorUpdate {
     double temperature;
     double humidity;
     int roomId;
+    long timestamp;
 
     public SensorUpdate() {
     }
 
-    public SensorUpdate(double temperature, double humidity, int roomId) {
+    public SensorUpdate(double temperature, double humidity, int roomId, long timestamp) {
         this.temperature = temperature;
         this.humidity = humidity;
         this.roomId = roomId;
+        this.timestamp = timestamp;
     }
 
     public double getTemperature() {
@@ -36,5 +38,13 @@ public class SensorUpdate {
 
     public void setRoomId(int roomId) {
         this.roomId = roomId;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 }

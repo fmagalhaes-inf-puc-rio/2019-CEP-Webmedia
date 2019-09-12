@@ -5,8 +5,8 @@ public class LowHumidity extends SensorUpdate {
         super();
     }
 
-    public LowHumidity(double temperature, double humidity, int roomId) {
-        super(temperature, humidity, roomId);
+    public LowHumidity(double temperature, double humidity, int roomId, long timestamp) {
+        super(temperature, humidity, roomId, timestamp);
     }
 
     public double getHumidityDeviation(){
